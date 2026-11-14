@@ -19,6 +19,7 @@
       --text-main: #F3F5F8;
       --text-muted: #8B95A5;
       --lime: #CCFF00;
+      --amber: #FFD60A;
       --rarity-standard: #4D7CFE;
       --rarity-epic: #9D4EDD;
       --rarity-arcane: #FF2A54;
@@ -142,9 +143,12 @@
     }
     .surprise-crate:active { transform: scale(0.985); }
     .surprise-crate.depleted {
-      border-color: var(--border-hard);
-      opacity: 0.58;
+      border-color: rgba(255, 214, 10, 0.45);
       cursor: default;
+    }
+    .surprise-crate.depleted .crate-title,
+    .surprise-crate.depleted .crate-sub {
+      opacity: 0.6;
     }
     .crate-top {
       display: flex;
@@ -157,14 +161,14 @@
       font-size: 0.7rem;
       color: #0D0F12;
       background: var(--lime);
-      padding: 2px 6px;
+      padding: 3px 7px;
       font-weight: 700;
       border-radius: 2px;
     }
     .crate-tag.empty {
-      background: var(--bg-elevated);
-      color: var(--text-muted);
-      border: 1px solid var(--border-hard);
+      background: rgba(255, 214, 10, 0.16);
+      color: var(--amber);
+      border: 1px solid var(--amber);
     }
     .crate-title { font-size: 1.35rem; color: var(--text-main); margin-bottom: 4px; }
     .crate-sub { font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
@@ -620,7 +624,7 @@
         <span class="mono" style="font-size:0.7rem; color:var(--lime);">[ MONTHLY DROP ]</span>
       </div>
       <div class="crate-title hud-font" id="crateTitle">СЛУЧАЙНЫЙ ДРОП // СЮРПРИЗ</div>
-      <div class="crate-sub" id="crateSub">1 бесплатный спин каждый месяц.</div>
+      <div class="crate-sub" id="crateSub">1 бесплатный спин каждый месяц (неиспользованный сгорает).</div>
     </div>
 
     <!-- ВКЛАДКИ КАТЕГОРИЙ И АРХИВА -->
@@ -1404,8 +1408,8 @@
         { title: 'СПЕЦПРОПУСК', rarity: 'standard' }
       ];
 
-      const totalSlots = 28;
-      const winIndex = 23;
+      const totalSlots = 48;
+      const winIndex = 42;
       let slotsHtml = '';
 
       for (let i = 0; i < totalSlots; i++) {
@@ -1417,12 +1421,15 @@
       track.innerHTML = slotsHtml;
       modal.classList.add('open');
 
-      let ticks = 0;
-      const tickTimer = setInterval(() => {
-        ticks++;
-        triggerHaptic('tick');
-        if (ticks > 18) clearInterval(tickTimer);
-      }, 140);
+      // Плавное замедление виброоткликов синхронно с торможением ленты (6.5 сек)
+      const tickSchedule = [
+        100, 200, 300, 410, 520, 640, 770, 910, 1060, 1220,
+        1400, 1600, 1820, 2060, 2330, 2630, 2970, 3360, 3810,
+        4330, 4930, 5600
+      ];
+      const tickTimers = tickSchedule.map(delay =>
+        setTimeout(() => triggerHaptic('tick'), delay)
+      );
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -1430,19 +1437,19 @@
           const slotWidth = 168;
           const targetOffset = (winIndex * slotWidth) + (slotWidth / 2) - (viewportWidth / 2);
 
-          track.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.85, 0.22, 1)';
+          track.style.transition = 'transform 6.5s cubic-bezier(0.06, 0.9, 0.18, 1)';
           track.style.transform = `translateX(-${targetOffset}px)`;
         });
       });
 
       setTimeout(() => {
-        clearInterval(tickTimer);
+        tickTimers.forEach(clearTimeout);
         triggerHaptic('stamp');
         resText.innerHTML = `<b style="color:var(--lime); font-size:0.98rem;">ВЫПАЛО: ${wonPrize.title}</b><br><span style="font-size:0.8rem;">${wonPrize.rule}</span>`;
         closeBtn.style.display = 'block';
         closeBtn.textContent = wonPrize.isJoker ? 'ВЫБРАТЬ БОНУС НА ЭКРАНЕ' : 'ЗАБРАТЬ ПРОПУСК';
         renderAll();
-      }, 3350);
+      }, 6650);
     }
 
     window.closeSurpriseModal = () => {
