@@ -1411,11 +1411,22 @@
       const totalSlots = 48;
       const winIndex = 42;
       let slotsHtml = '';
+      let prevTitle = '';
 
       for (let i = 0; i < totalSlots; i++) {
-        const item = (i === winIndex)
-          ? wonPrize
-          : fillers[Math.floor(Math.random() * fillers.length)];
+        let item;
+        if (i === winIndex) {
+          item = wonPrize;
+        } else {
+          const forbidden = [prevTitle];
+          if (i === winIndex - 1 || i === winIndex + 1) {
+            forbidden.push(wonPrize.title);
+          }
+          const candidates = fillers.filter(f => !forbidden.includes(f.title));
+          const poolToUse = candidates.length > 0 ? candidates : fillers;
+          item = poolToUse[Math.floor(Math.random() * poolToUse.length)];
+        }
+        prevTitle = item.title;
         slotsHtml += `<div class="roulette-slot rarity-${item.rarity || 'epic'}">${item.title}</div>`;
       }
       track.innerHTML = slotsHtml;
