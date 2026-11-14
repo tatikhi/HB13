@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>MATCH PASS // 13</title>
+  <title>HAPPY PASS // 13</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -586,8 +586,8 @@
   <div id="app" style="display:none;">
     <div class="top-hud">
       <div class="brand-block">
-        <span class="season-badge mono">LVL 13</span>
-        <div class="brand-title hud-font">MATCH PASS</div>
+        <span class="season-badge mono">SEASON 13</span>
+        <div class="brand-title hud-font">HAPPY PASS</div>
       </div>
       <div class="hud-stats mono">
         ЗАРЯДОВ: <b id="totalLeftCount">0</b><br>
@@ -605,6 +605,12 @@
     <div class="active-section" id="activeSection">
       <div class="section-label mono">АКТИВНЫЙ ПРОПУСК // ПРЕДЪЯВИТЬ РОДИТЕЛЯМ</div>
       <div id="activeList"></div>
+    </div>
+
+    <!-- ИНСАЙТ И ЕСТЕСТВЕННОЕ УВЕДОМЛЕНИЕ-НАПОМИНАЛКА -->
+    <div id="idleNudge" style="display:none; background:rgba(204,255,0,0.06); border:1px dashed var(--lime); padding:12px; border-radius:6px; margin-bottom:18px; text-align:center;">
+      <div class="mono" style="font-size:0.72rem; color:var(--lime); font-weight:700; margin-bottom:4px;">💡 HAPPY INSIGHT</div>
+      <div style="font-size:0.84rem; color:var(--text-main); font-weight:600;">Тебе и без бонусов хорошо живется? Не потрачено ни одного заряда за этот месяц!</div>
     </div>
 
     <!-- ЕЖЕМЕСЯЧНЫЙ БАННЕР СЮРПРИЗ -->
@@ -630,7 +636,7 @@
       <h3 class="hud-font" id="confirmTitle">АКТИВИРОВАТЬ БИЛЕТ?</h3>
       <p id="confirmDesc">Попытка спишется сразу, а родителям уйдет уведомление.</p>
       <div class="modal-actions mono">
-        <button class="btn-modal-cancel" onclick="closeConfirm()">ОТМЕНА</button>
+        <button class="btn-modal-cancel" id="btnConfirmCancel" onclick="closeConfirm()">ПЕРЕДУМАЛ</button>
         <button class="btn-modal-confirm" id="btnConfirmAction">ПОДТВЕРДИТЬ</button>
       </div>
     </div>
@@ -640,10 +646,11 @@
   <div class="modal-backdrop" id="swapModal">
     <div class="modal-box">
       <h3 class="hud-font">ЗАМЕНА БОНУСА</h3>
-      <p id="swapDesc">Переносим 1 заряд на любую другую карточку.</p>
+      <p id="swapDesc">Обменяй текущий бонус (1 ед.) на любой из списка ниже.</p>
+      <div class="mono" style="font-size: 0.72rem; color: var(--text-muted); margin-top: -12px; margin-bottom: 14px;">1 ед. спишется с текущего бонуса на выбранный</div>
       <div class="swap-list" id="swapTargetList"></div>
       <div class="modal-actions mono">
-        <button class="btn-modal-cancel" onclick="closeSwapModal()">ОТМЕНА</button>
+        <button class="btn-modal-cancel" onclick="closeSwapModal()">ПЕРЕДУМАЛ</button>
         <button class="btn-modal-confirm" id="btnConfirmSwap" disabled onclick="executeCardSwap()">ЗАМЕНИТЬ</button>
       </div>
     </div>
@@ -776,6 +783,33 @@
       });
     }
 
+    // Показ напоминания об аккуратном расходе (если нет других активностей)
+    function checkForMonthlyIdleNudge() {
+      const now = new Date();
+      const currentDay = now.getDate();
+      if (currentDay < 15) return; // Показываем только с середины месяца (15-е число и позже)
+
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+
+      const isThisMonth = (timeStr) => {
+        if (!timeStr) return false;
+        const parts = timeStr.split('.');
+        if (parts.length >= 2) {
+          return parts[1].substring(0, 2) === mm;
+        }
+        return false;
+      };
+
+      const regularActiveThisMonth = state.activePasses.filter(p => !p.uid.startsWith('surp_') && isThisMonth(p.time));
+      const regularArchivedThisMonth = state.archive.filter(p => !p.uid.startsWith('surp_') && isThisMonth(p.activatedAt));
+
+      if (regularActiveThisMonth.length === 0 && regularArchivedThisMonth.length === 0) {
+        document.getElementById('idleNudge').style.display = 'block';
+      } else {
+        document.getElementById('idleNudge').style.display = 'none';
+      }
+    }
+
     async function bootstrap() {
       if (!tg || !tg.initData || tg.initData.length < 10) {
         document.getElementById('lockScreen').style.display = 'flex';
@@ -849,6 +883,7 @@
       renderHeaderStats();
       renderSurpriseCrate();
       renderActivePasses();
+      checkForMonthlyIdleNudge();
       renderTabs();
       renderCards();
     }
@@ -1127,7 +1162,7 @@
       swapTargetId = null;
 
       document.getElementById('swapDesc').innerHTML =
-        `Списываем 1 заряд с <b>«${sourceCard.title}»</b> и переносим на выбранный бонус (осталось замен: <b>${swapsLeft}/3</b>):`;
+        `Обменяй текущий бонус (1 ед.) на любой из списка ниже (осталось замен: <b>${swapsLeft}/3</b>):`;
 
       const listEl = document.getElementById('swapTargetList');
       const targets = CFG.CARDS.filter(c => c.id !== sourceId);
@@ -1204,7 +1239,7 @@
       }
     };
 
-    // ПОДТВЕРЖДЕНИЕ АКТИВАЦИИ ОБЫЧНОГО СЕРТИФИКАТА
+    // ПОДТВЕРДИТЬ АКТИВАЦИЮ СЕРТИФИКАТА (ОБЫЧНЫЕ КАРТЫ)
     window.openConfirm = (cardId) => {
       const card = CFG.CARDS.find(c => c.id === cardId);
       if (!card || getCardLeft(card) <= 0) return;
@@ -1215,8 +1250,13 @@
       document.getElementById('confirmDesc').textContent =
         `Условие: ${card.badge}. После нажатия спишется 1 попытка, а родителям придет уведомление.`;
 
+      // Восстанавливаем дефолтные тексты для обычного списания
+      document.getElementById('btnConfirmCancel').textContent = 'ПЕРЕДУМАЛ';
+      
       const btn = document.getElementById('btnConfirmAction');
+      btn.textContent = 'ПОДТВЕРДИТЬ';
       btn.onclick = executeCardActivation;
+      
       document.getElementById('confirmModal').classList.add('open');
     };
 
@@ -1284,12 +1324,17 @@
       }
 
       triggerHaptic('tick');
-      document.getElementById('confirmTitle').textContent = 'ОТКРЫТЬ СЮРПРИЗ?';
+      document.getElementById('confirmTitle').textContent = 'ИСПЫТАЕМ УДАЧУ?';
       document.getElementById('confirmDesc').textContent =
         'Выпадет случайный сертификат. Попытка за этот месяц спишется сразу, отменить выбор нельзя.';
 
+      // Применяем персональные тексты кнопок для Окна Сюрприза
+      document.getElementById('btnConfirmCancel').textContent = 'ОТМЕНА, ПЕРЕДУМАЛ';
+      
       const btn = document.getElementById('btnConfirmAction');
+      btn.textContent = 'Я ЛАКИ, ПОГНАЛИ!';
       btn.onclick = executeSurpriseDrop;
+      
       document.getElementById('confirmModal').classList.add('open');
     };
 
