@@ -1,6 +1,6 @@
 window.PASS_CONFIG = {
   // Вставь сюда URL твоего Cloudflare Worker (без слэша на конце)
-  WORKER_URL: "https://tg-pass-relay.tania.kustova.workers.dev",
+  WORKER_URL: "https://tg-pass-relay.tania-kustova.workers.dev",
 
   // Настройки плашки «СЮРПРИЗ»
   SURPRISE: {
