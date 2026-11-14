@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>MATCH PASS // 13</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="./config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0D0F12;
+      --bg-card: #161A20;
+      --bg-elevated: #1E232B;
+      --border-hard: #2A303B;
+      --text-main: #F3F5F8;
+      --text-muted: #8B95A5;
+      --lime: #CCFF00;
+      --rarity-standard: #4D7CFE;
+      --rarity-epic: #9D4EDD;
+      --rarity-arcane: #FF2A54;
+      --stamp-red: #FF2A44;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 14px 14px 52px;
+      overflow-x: hidden;
+    }
+
+    .hud-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ЭКРАН БЛОКИРОВКИ ВНЕ TELEGRAM */
+    #lockScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 85vh;
+      padding: 24px;
+      border: 1px dashed var(--border-hard);
+      background: var(--bg-card);
+      border-radius: 6px;
+    }
+    #lockScreen h1 { font-size: 2rem; color: var(--lime); margin-bottom: 10px; }
+    #lockScreen p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; max-width: 300px; }
+
+    /* ВЕРХНЯЯ ПАНЕЛЬ HUD */
+    .top-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-hard);
+    }
+    .brand-block { display: flex; align-items: center; gap: 10px; }
+    .season-badge {
+      background: var(--lime);
+      color: #0D0F12;
+      font-weight: 700;
+      font-size: 0.72rem;
+      padding: 3px 7px;
+      border-radius: 3px;
+    }
+    .brand-title { font-size: 1.35rem; font-weight: 700; line-height: 1; }
+    .hud-stats { text-align: right; font-size: 0.75rem; color: var(--text-muted); }
+    .hud-stats b { color: var(--lime); font-size: 0.85rem; }
+
+    /* ПАНЕЛЬ ТЕСТИРОВАНИЯ ДЛЯ РОДИТЕЛЕЙ */
+    .parent-bar {
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 42, 84, 0.12);
+      border: 1px solid var(--rarity-arcane);
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+      font-size: 0.75rem;
+    }
+    .btn-reset-test {
+      background: var(--rarity-arcane);
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* АКТИВНЫЕ ПРОПУСКИ */
+    .active-section { margin-bottom: 18px; display: none; }
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--lime);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-label::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--lime);
+      display: inline-block;
+    }
+
+    /* ПЛАШКА «СЮРПРИЗ» */
+    .surprise-crate {
+      position: relative;
+      background: repeating-linear-gradient(
+        -45deg,
+        #161A20,
+        #161A20 12px,
+        #1B2028 12px,
+        #1B2028 24px
+      );
+      border: 1px solid var(--lime);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 18px;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .surprise-crate:active { transform: scale(0.985); }
+    .surprise-crate.depleted {
+      border-color: var(--border-hard);
+      opacity: 0.55;
+      cursor: default;
+    }
+    .crate-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .crate-tag {
+      font-size: 0.7rem;
+      color: #0D0F12;
+      background: var(--lime);
+      padding: 2px 6px;
+      font-weight: 700;
+      border-radius: 2px;
+    }
+    .crate-title { font-size: 1.35rem; color: var(--text-main); margin-bottom: 4px; }
+    .crate-sub { font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
+
+    /* ВКЛАДКИ КАТЕГОРИЙ И АРХИВА */
+    .cat-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      background: var(--bg-card);
+      border: 1px solid var(--border-hard);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .cat-tab.active {
+      background: var(--lime);
+      color: #0D0F12;
+      border-color: var(--lime);
+    }
+
+    /* КАРТОЧКА-БИЛЕТ С ЛИНИЕЙ КОНТРОЛЯ */
+    .ticket {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border-hard);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: opacity 0.2s;
+    }
+    .ticket.exhausted { opacity: 0.45; }
+    .ticket.archived-card { opacity: 0.78; }
+
+    .ticket::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+    }
+    .rarity-standard::before { background: var(--rarity-standard); }
+    .rarity-epic::before { background: var(--rarity-epic); }
+    .rarity-arcane::before { background: var(--rarity-arcane); }
+
+    .ticket-main { padding: 14px 14px 12px 18px; }
+
+    .ticket-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .condition-badge {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hard);
+      padding: 2px 7px;
+      border-radius: 3px;
+      color: var(--text-main);
+    }
+
+    .ticket-title { font-size: 1.3rem; line-height: 1.15; margin-bottom: 3px; padding-right: 88px; }
+    .ticket-tag { font-size: 0.72rem; color: var(--lime); margin-bottom: 8px; }
+    .ticket-rule { font-size: 0.82rem; color: var(--text-muted); line-height: 1.35; margin-bottom: 12px; }
+
+    /* ВЫБОР ДЖОКЕРА */
+    .joker-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--lime);
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    .joker-box-title {
+      font-size: 0.72rem;
+      color: var(--lime);
+      margin-bottom: 8px;
+    }
+    .joker-option-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: var(--bg-card);
+      border: 1px solid var(--border-hard);
+      color: var(--text-main);
+      padding: 9px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .joker-option-btn.selected {
+      border-color: var(--lime);
+      background: rgba(204, 255, 0, 0.12);
+      color: var(--lime);
+    }
+    .btn-save-joker {
+      width: 100%;
+      background: var(--lime);
+      color: #0D0F12;
+      border: none;
+      padding: 9px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    /* ШКАЛА ЗАРЯДОВ */
+    .charge-bar { display: flex; gap: 5px; }
+    .charge-cell {
+      height: 6px;
+      flex: 1;
+      background: var(--bg-elevated);
+      border-radius: 1px;
+    }
+    .charge-cell.filled { background: var(--lime); }
+
+    /* ЛИНИЯ КОНТРОЛЯ */
+    .control-line {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 18px;
+      margin: 0 12px;
+    }
+    .control-line::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 50%;
+      border-top: 1px dashed #384152;
+    }
+    .control-line span {
+      position: relative;
+      background: var(--bg-card);
+      padding: 0 8px;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      color: #5C677D;
+    }
+    .notch-left, .notch-right {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hard);
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+    .notch-left { left: -20px; }
+    .notch-right { right: -20px; }
+
+    /* КОРЕШОК БИЛЕТА */
+    .ticket-stub {
+      padding: 10px 14px 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.18);
+      gap: 8px;
+    }
+    .stub-count { font-size: 0.75rem; color: var(--text-muted); }
+    .stub-count b { color: var(--text-main); }
+
+    .btn-use {
+      background: var(--lime);
+      color: #0D0F12;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.76rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.1s;
+    }
+    .btn-use:active { transform: scale(0.95); }
+    .btn-use:disabled {
+      background: var(--bg-elevated);
+      color: #5C677D;
+      cursor: default;
+    }
+
+    /* ШТАМПЫ APPROVED / USED */
+    .approved-stamp {
+      position: absolute;
+      right: 14px;
+      top: 32px;
+      border: 3px solid var(--stamp-red);
+      color: var(--stamp-red);
+      padding: 3px 9px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      border-radius: 4px;
+      transform: rotate(-8deg) scale(1);
+      background: rgba(13, 15, 18, 0.85);
+      pointer-events: none;
+      z-index: 5;
+      animation: stampSlam 0.28s cubic-bezier(0.2, 1.4, 0.4, 1);
+    }
+    .approved-stamp.used-stamp {
+      border-color: #6B778D;
+      color: #8B95A5;
+      animation: none;
+    }
+    .approved-time {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.56rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+      margin-top: -2px;
+    }
+
+    @keyframes stampSlam {
+      0% { transform: rotate(-16deg) scale(2.4); opacity: 0; }
+      70% { transform: rotate(-6deg) scale(0.94); opacity: 1; }
+      100% { transform: rotate(-8deg) scale(1); opacity: 1; }
+    }
+
+    .empty-archive {
+      text-align: center;
+      padding: 36px 18px;
+      border: 1px dashed var(--border-hard);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* МОДАЛЬНЫЕ ОКНА */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.84);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 100;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-box {
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-card);
+      border: 1px solid var(--lime);
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .modal-box h3 { font-size: 1.4rem; margin-bottom: 8px; }
+    .modal-box p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 18px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-modal-cancel {
+      flex: 1;
+      padding: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hard);
+      color: var(--text-main);
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-modal-confirm {
+      flex: 1;
+      padding: 12px;
+      background: var(--lime);
+      border: none;
+      color: #0D0F12;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* РУЛЕТКА СЮРПРИЗА */
+    .roulette-viewport {
+      position: relative;
+      height: 92px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hard);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 14px 0;
+    }
+    .roulette-pointer {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--lime);
+      z-index: 10;
+      box-shadow: 0 0 10px var(--lime);
+    }
+    .roulette-track {
+      display: flex;
+      height: 100%;
+      align-items: center;
+      will-change: transform;
+    }
+    .roulette-slot {
+      min-width: 160px;
+      height: 74px;
+      margin: 0 4px;
+      background: var(--bg-elevated);
+      border-bottom: 3px solid var(--rarity-epic);
+      border-radius: 4px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.15;
+    }
+    .roulette-slot.rarity-arcane { border-bottom-color: var(--rarity-arcane); }
+    .roulette-slot.rarity-standard { border-bottom-color: var(--rarity-standard); }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-elevated);
+      border: 1px solid var(--lime);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- ЭКРАН БЛОКИРОВКИ ВНЕ TELEGRAM -->
+  <div id="lockScreen">
+    <h1 class="hud-font">ACCESS DENIED</h1>
+    <p class="mono">Этот цифровой пропуск работает только внутри официального бота Telegram.</p>
+  </div>
+
+  <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+  <div id="app" style="display:none;">
+    <div class="top-hud">
+      <div class="brand-block">
+        <span class="season-badge mono">LVL 13</span>
+        <div class="brand-title hud-font">MATCH PASS</div>
+      </div>
+      <div class="hud-stats mono">
+        ДОСТУПНО: <b id="totalLeftCount">0</b>
+      </div>
+    </div>
+
+    <!-- ПАНЕЛЬ ТЕСТИРОВАНИЯ ДЛЯ РОДИТЕЛЕЙ -->
+    <div class="parent-bar mono" id="parentBar">
+      <span>РЕЖИМ РОДИТЕЛЯ (ТЕСТ)</span>
+      <button class="btn-reset-test mono" onclick="resetMyTestStorage()">СБРОСИТЬ МОИ ТЕСТЫ</button>
+    </div>
+
+    <!-- АКТИВНЫЕ ПРОПУСКИ СО ШТАМПОМ APPROVED -->
+    <div class="active-section" id="activeSection">
+      <div class="section-label mono">АКТИВНЫЙ ПРОПУСК // ПРЕДЪЯВИТЬ РОДИТЕЛЯМ</div>
+      <div id="activeList"></div>
+    </div>
+
+    <!-- БАННЕР СЮРПРИЗ -->
+    <div class="surprise-crate" id="surpriseCrate" onclick="openSurprisePrompt()">
+      <div class="crate-top">
+        <span class="crate-tag mono" id="crateCountBadge">2 / 2 ПОПЫТКИ</span>
+        <span class="mono" style="font-size:0.7rem; color:var(--lime);">[ SECRET DROP ]</span>
+      </div>
+      <div class="crate-title hud-font" id="crateTitle">ЗАКРЫТЫЙ ДРОП // СЮРПРИЗ</div>
+      <div class="crate-sub" id="crateSub">Рандомный сертификат из закрытого пула.</div>
+    </div>
+
+    <!-- ВКЛАДКИ КАТЕГОРИЙ И АРХИВ -->
+    <div class="cat-tabs mono" id="catTabs"></div>
+
+    <!-- КОНТЕНТ ВКЛАДКИ -->
+    <div id="cardsContainer"></div>
+  </div>
+
+  <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-box">
+      <h3 class="hud-font" id="confirmTitle">АКТИВИРОВАТЬ БИЛЕТ?</h3>
+      <p id="confirmDesc">Попытка спишется сразу, а родителям уйдет уведомление.</p>
+      <div class="modal-actions mono">
+        <button class="btn-modal-cancel" onclick="closeConfirm()">ОТМЕНА</button>
+        <button class="btn-modal-confirm" id="btnConfirmAction">ПОДТВЕРДИТЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ОТКРЫТИЯ СЮРПРИЗА -->
+  <div class="modal-backdrop" id="surpriseModal">
+    <div class="modal-box" style="text-align:center;">
+      <div class="mono" style="font-size:0.72rem; color:var(--lime);">ОТКРЫТИЕ КОНТЕЙНЕРА...</div>
+      <div class="roulette-viewport" id="rouletteViewport">
+        <div class="roulette-pointer"></div>
+        <div class="roulette-track" id="rouletteTrack"></div>
+      </div>
+      <div id="surpriseResultText" style="min-height:44px; font-size:0.85rem; color:var(--text-muted); text-align:left;">
+        Определяем твой бонус...
+      </div>
+      <div id="surpriseJokerSelector" style="display:none; text-align:left;"></div>
+      <button class="btn-modal-confirm mono" id="btnCloseSurprise" style="width:100%; margin-top:12px; display:none;" onclick="closeSurpriseModal()">ЗАБРАТЬ ПРОПУСК</button>
+    </div>
+  </div>
+
+  <div class="toast mono" id="toast"></div>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    const CFG = window.PASS_CONFIG;
+    const STORAGE_KEY = 'matchpass_v2_state';
+
+    let state = {
+      used: {},          // { cardId: count }
+      activePasses: [],  // [{ uid, title, rule, badge, rarity, time, isJokerPending, jokerOptions }]
+      wonSurprises: [],  // ['surp_pizza', ...]
+      archive: []        // [{ uid, title, rule, badge, rarity, activatedAt, archivedAt }]
+    };
+
+    let selectedCat = 'ALL';
+    let isParentMode = false;
+    let pendingCardId = null;
+    let isBusy = false;
+    let selectedJokerIndices = {}; // { passUid: idx }
+
+    function getClientTimestamp() {
+      return new Date().toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function triggerHaptic(type) {
+      try {
+        if (type === 'tick') {
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+          if (navigator.vibrate) navigator.vibrate(12);
+        } else if (type === 'stamp') {
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('heavy');
+            setTimeout(() => tg.HapticFeedback.notificationOccurred('success'), 80);
+          }
+          if (navigator.vibrate) navigator.vibrate([30, 45, 110]);
+        }
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function loadCloudState() {
+      return new Promise(resolve => {
+        if (!tg || !tg.CloudStorage) return resolve(null);
+        tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => {
+          if (!err && val) {
+            try {
+              resolve(JSON.parse(val));
+            } catch {
+              resolve(null);
+            }
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    function saveCloudState() {
+      return new Promise((resolve, reject) => {
+        if (!tg || !tg.CloudStorage) return reject('No CloudStorage');
+        tg.CloudStorage.setItem(STORAGE_KEY, JSON.stringify(state), (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+
+    async function bootstrap() {
+      if (!tg || !tg.initData || tg.initData.length < 10) {
+        document.getElementById('lockScreen').style.display = 'flex';
+        return;
+      }
+
+      tg.ready();
+      tg.expand();
+      if (tg.setHeaderColor) tg.setHeaderColor('#0D0F12');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#0D0F12');
+
+      try {
+        const res = await fetch(`${CFG.WORKER_URL}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData })
+        });
+        const authData = await res.json();
+        if (!authData.ok) {
+          document.getElementById('lockScreen').style.display = 'flex';
+          return;
+        }
+        isParentMode = Boolean(authData.isParent);
+      } catch (e) {
+        document.getElementById('lockScreen').style.display = 'flex';
+        return;
+      }
+
+      const saved = await loadCloudState();
+      if (saved) {
+        state.used = saved.used || {};
+        state.activePasses = Array.isArray(saved.activePasses) ? saved.activePasses : [];
+        state.wonSurprises = Array.isArray(saved.wonSurprises) ? saved.wonSurprises : [];
+        state.archive = Array.isArray(saved.archive) ? saved.archive : [];
+      }
+
+      document.getElementById('app').style.display = 'block';
+      if (isParentMode) {
+        document.getElementById('parentBar').style.display = 'flex';
+      }
+
+      renderTabs();
+      renderAll();
+    }
+
+    function renderTabs() {
+      const wrap = document.getElementById('catTabs');
+      const archiveLabel = state.archive.length > 0 ? `АРХИВ (${state.archive.length})` : 'АРХИВ';
+      const allTabs = [
+        { id: 'ALL', label: 'ВСЕ БИЛЕТЫ' },
+        ...CFG.CATEGORIES,
+        { id: 'ARCHIVE', label: archiveLabel }
+      ];
+      wrap.innerHTML = allTabs.map(t => `
+        <button class="cat-tab ${selectedCat === t.id ? 'active' : ''}" onclick="selectCategory('${t.id}')">
+          ${t.label}
+        </button>
+      `).join('');
+    }
+
+    window.selectCategory = (catId) => {
+      triggerHaptic('tick');
+      selectedCat = catId;
+      renderTabs();
+      renderCards();
+    };
+
+    function renderAll() {
+      renderHeaderStats();
+      renderSurpriseCrate();
+      renderActivePasses();
+      renderTabs();
+      renderCards();
+    }
+
+    function renderHeaderStats() {
+      let totalLeft = 0;
+      CFG.CARDS.forEach(c => {
+        const used = state.used[c.id] || 0;
+        totalLeft += Math.max(0, c.limit - used);
+      });
+      const surpUsed = state.used[CFG.SURPRISE.id] || 0;
+      totalLeft += Math.max(0, CFG.SURPRISE.limit - surpUsed);
+      document.getElementById('totalLeftCount').textContent = totalLeft;
+    }
+
+    function renderSurpriseCrate() {
+      const used = state.used[CFG.SURPRISE.id] || 0;
+      const left = Math.max(0, CFG.SURPRISE.limit - used);
+      const crate = document.getElementById('surpriseCrate');
+      document.getElementById('crateTitle').textContent = CFG.SURPRISE.title;
+      document.getElementById('crateSub').textContent = CFG.SURPRISE.subtitle;
+      document.getElementById('crateCountBadge').textContent = `${left} / ${CFG.SURPRISE.limit} ПОПЫТКИ`;
+
+      if (left === 0) crate.classList.add('depleted');
+      else crate.classList.remove('depleted');
+    }
+
+    function renderActivePasses() {
+      const sec = document.getElementById('activeSection');
+      const list = document.getElementById('activeList');
+      if (state.activePasses.length === 0) {
+        sec.style.display = 'none';
+        return;
+      }
+      sec.style.display = 'block';
+      list.innerHTML = state.activePasses.map(p => {
+        let jokerHtml = '';
+        if (p.isJokerPending && Array.isArray(p.jokerOptions)) {
+          const picked = selectedJokerIndices[p.uid];
+          jokerHtml = `
+            <div class="joker-box">
+              <div class="joker-box-title mono">ВЫБЕРИ ОДИН БОНУС И СОХРАНИ:</div>
+              ${p.jokerOptions.map((opt, idx) => `
+                <button class="joker-option-btn ${picked === idx ? 'selected' : ''}" onclick="pickJokerOption('${p.uid}', ${idx})">
+                  ${picked === idx ? '● ' : '○ '}${opt.label}
+                </button>
+              `).join('')}
+              <button class="btn-save-joker mono" onclick="confirmJokerChoice('${p.uid}')">ЗАФИКСИРОВАТЬ ВЫБОР</button>
+            </div>
+          `;
+        }
+
+        const archiveBtnHtml = p.isJokerPending
+          ? `<button class="btn-use mono" disabled>СНАЧАЛА ВЫБЕРИ БОНУС</button>`
+          : `<button class="btn-use mono" style="background:var(--bg-elevated); color:var(--text-main); border:1px solid var(--border-hard);" onclick="movePassToArchive('${p.uid}')">В АРХИВ ✓</button>`;
+
+        return `
+          <div class="ticket rarity-${p.rarity}">
+            <div class="approved-stamp">
+              APPROVED
+              <span class="approved-time">${p.time}</span>
+            </div>
+            <div class="ticket-main">
+              <div class="ticket-meta mono">
+                <span>ACTIVE PASS</span>
+                <span class="condition-badge">${p.badge}</span>
+              </div>
+              <div class="ticket-title hud-font">${p.title}</div>
+              <div class="ticket-rule" style="margin-bottom:0;">${p.rule}</div>
+              ${jokerHtml}
+            </div>
+            <div class="control-line">
+              <div class="notch-left"></div>
+              <span class="mono">ЛИНИЯ КОНТРОЛЯ</span>
+              <div class="notch-right"></div>
+            </div>
+            <div class="ticket-stub">
+              <span class="stub-count mono">ПОКАЖИ РОДИТЕЛЯМ</span>
+              ${archiveBtnHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.pickJokerOption = (uid, idx) => {
+      triggerHaptic('tick');
+      selectedJokerIndices[uid] = idx;
+      renderActivePasses();
+    };
+
+    window.confirmJokerChoice = async (uid) => {
+      if (isBusy) return;
+      const pass = state.activePasses.find(p => p.uid === uid);
+      if (!pass || !pass.isJokerPending) return;
+
+      const idx = selectedJokerIndices[uid];
+      if (idx === undefined || !pass.jokerOptions[idx]) {
+        showToast('Сначала нажми на один из 4 вариантов!');
+        return;
+      }
+
+      const chosen = pass.jokerOptions[idx];
+      isBusy = true;
+
+      try {
+        const res = await fetch(`${CFG.WORKER_URL}/joker-select`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initData: tg.initData,
+            chosenLabel: chosen.label,
+            chosenRule: chosen.rule,
+            chosenBadge: chosen.badge,
+            clientTime: getClientTimestamp()
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error('Reject');
+
+        pass.title = `ДЖОКЕР: ${chosen.label.toUpperCase()}`;
+        pass.rule = chosen.rule;
+        pass.badge = chosen.badge;
+        pass.isJokerPending = false;
+        delete pass.jokerOptions;
+
+        await saveCloudState();
+        triggerHaptic('stamp');
+        renderActivePasses();
+        showToast('Выбор сохранен и отправлен родителям!');
+      } catch (e) {
+        showToast('Ошибка связи. Проверь интернет!');
+      } finally {
+        isBusy = false;
+      }
+    };
+
+    // Перенос выполненного пропуска в вкладку «АРХИВ»
+    window.movePassToArchive = async (uid) => {
+      const idx = state.activePasses.findIndex(p => p.uid === uid);
+      if (idx === -1) return;
+
+      const [pass] = state.activePasses.splice(idx, 1);
+      state.archive.unshift({
+        uid: pass.uid,
+        title: pass.title,
+        rule: pass.rule,
+        badge: pass.badge,
+        rarity: pass.rarity,
+        activatedAt: pass.time,
+        archivedAt: getClientTimestamp()
+      });
+
+      await saveCloudState();
+      triggerHaptic('stamp');
+      renderAll();
+      showToast('Перенесено в вкладку АРХИВ');
+    };
+
+    function renderCards() {
+      const container = document.getElementById('cardsContainer');
+
+      // Вкладка АРХИВ
+      if (selectedCat === 'ARCHIVE') {
+        if (state.archive.length === 0) {
+          container.innerHTML = `
+            <div class="empty-archive mono">
+              АРХИВ ПОКА ПУСТ.<br>
+              Здесь будут сохраняться все использованные сертификаты и открытые сюрпризы.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = state.archive.map(item => `
+          <div class="ticket rarity-${item.rarity} archived-card">
+            <div class="approved-stamp used-stamp">
+              USED
+              <span class="approved-time">${item.archivedAt}</span>
+            </div>
+            <div class="ticket-main">
+              <div class="ticket-meta mono">
+                <span>АКТИВИРОВАН: ${item.activatedAt}</span>
+                <span class="condition-badge">${item.badge}</span>
+              </div>
+              <div class="ticket-title hud-font">${item.title}</div>
+              <div class="ticket-rule" style="margin-bottom:0;">${item.rule}</div>
+            </div>
+            <div class="control-line">
+              <div class="notch-left"></div>
+              <span class="mono">ЛИНИЯ КОНТРОЛЯ</span>
+              <div class="notch-right"></div>
+            </div>
+            <div class="ticket-stub">
+              <span class="stub-count mono">СТАТУС: ВЫПОЛНЕНО</span>
+              <span class="stub-count mono">${item.archivedAt}</span>
+            </div>
+          </div>
+        `).join('');
+        return;
+      }
+
+      // Обычные категории сертификатов
+      const filtered = selectedCat === 'ALL'
+        ? CFG.CARDS
+        : CFG.CARDS.filter(c => c.cat === selectedCat);
+
+      container.innerHTML = filtered.map(card => {
+        const used = state.used[card.id] || 0;
+        const left = Math.max(0, card.limit - used);
+        const exhausted = left === 0;
+
+        let cellsHtml = '';
+        for (let i = 0; i < card.limit; i++) {
+          cellsHtml += `<div class="charge-cell ${i < left ? 'filled' : ''}"></div>`;
+        }
+
+        return `
+          <div class="ticket rarity-${card.rarity} ${exhausted ? 'exhausted' : ''}">
+            ${exhausted ? `<div class="approved-stamp">ИСЧЕРПАНО</div>` : ''}
+            <div class="ticket-main">
+              <div class="ticket-meta mono">
+                <span>ID // ${card.code}</span>
+                <span class="condition-badge">${card.badge}</span>
+              </div>
+              <div class="ticket-title hud-font">${card.title}</div>
+              <div class="ticket-tag mono">// ${card.tag}</div>
+              <div class="ticket-rule">${card.rule}</div>
+              <div class="charge-bar">${cellsHtml}</div>
+            </div>
+            <div class="control-line">
+              <div class="notch-left"></div>
+              <span class="mono">ЛИНИЯ КОНТРОЛЯ</span>
+              <div class="notch-right"></div>
+            </div>
+            <div class="ticket-stub">
+              <div class="stub-count mono">ОСТАТОК: <b>${left}/${card.limit}</b></div>
+              <button class="btn-use mono" ${exhausted ? 'disabled' : ''} onclick="openConfirm('${card.id}')">
+                ${exhausted ? 'НЕТ ЗАРЯДОВ' : 'АКТИВИРОВАТЬ'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ПОДТВЕРЖДЕНИЕ ОБЫЧНОГО СЕРТИФИКАТА
+    window.openConfirm = (cardId) => {
+      const card = CFG.CARDS.find(c => c.id === cardId);
+      if (!card) return;
+      const used = state.used[card.id] || 0;
+      if (used >= card.limit) return;
+
+      triggerHaptic('tick');
+      pendingCardId = cardId;
+      document.getElementById('confirmTitle').textContent = card.title;
+      document.getElementById('confirmDesc').textContent =
+        `Условие: ${card.badge}. После нажатия спишется 1 попытка, а родителям придет уведомление.`;
+
+      const btn = document.getElementById('btnConfirmAction');
+      btn.onclick = executeCardActivation;
+      document.getElementById('confirmModal').classList.add('open');
+    };
+
+    window.closeConfirm = () => {
+      pendingCardId = null;
+      document.getElementById('confirmModal').classList.remove('open');
+    };
+
+    async function executeCardActivation() {
+      if (isBusy || !pendingCardId) return;
+      const card = CFG.CARDS.find(c => c.id === pendingCardId);
+      if (!card) return;
+
+      isBusy = true;
+      const btn = document.getElementById('btnConfirmAction');
+      btn.textContent = 'ОТПРАВКА...';
+
+      const catObj = CFG.CATEGORIES.find(c => c.id === card.cat);
+      const nowTime = getClientTimestamp();
+
+      try {
+        const res = await fetch(`${CFG.WORKER_URL}/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initData: tg.initData,
+            title: card.title,
+            category: catObj ? catObj.label : card.cat,
+            badge: card.badge,
+            rule: card.rule,
+            clientTime: nowTime
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error('Server reject');
+
+        state.used[card.id] = (state.used[card.id] || 0) + 1;
+        state.activePasses.unshift({
+          uid: 'pass_' + Date.now(),
+          title: card.title,
+          rule: card.rule,
+          badge: card.badge,
+          rarity: card.rarity,
+          time: nowTime
+        });
+
+        await saveCloudState();
+        closeConfirm();
+        triggerHaptic('stamp');
+        renderAll();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e) {
+        showToast('Ошибка связи. Проверь интернет!');
+      } finally {
+        isBusy = false;
+        btn.textContent = 'ПОДТВЕРДИТЬ';
+      }
+    }
+
+    // ОТКРЫТИЕ СЮРПРИЗА
+    window.openSurprisePrompt = () => {
+      const used = state.used[CFG.SURPRISE.id] || 0;
+      if (used >= CFG.SURPRISE.limit) {
+        showToast('Все закрытые дропы уже открыты!');
+        return;
+      }
+
+      triggerHaptic('tick');
+      document.getElementById('confirmTitle').textContent = 'ОТКРЫТЬ СЮРПРИЗ?';
+      document.getElementById('confirmDesc').textContent =
+        'Выпадет случайный сертификат. Попытка спишется мгновенно, отменить выбор нельзя.';
+
+      const btn = document.getElementById('btnConfirmAction');
+      btn.onclick = executeSurpriseDrop;
+      document.getElementById('confirmModal').classList.add('open');
+    };
+
+    async function executeSurpriseDrop() {
+      if (isBusy) return;
+      isBusy = true;
+      const btn = document.getElementById('btnConfirmAction');
+      btn.textContent = 'ВЗЛОМ...';
+      const nowTime = getClientTimestamp();
+
+      try {
+        const res = await fetch(`${CFG.WORKER_URL}/surprise`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initData: tg.initData,
+            excludeIds: state.wonSurprises,
+            clientTime: nowTime
+          })
+        });
+        const data = await res.json();
+        if (!data.ok || !data.prize) throw new Error('Drop failed');
+
+        const prize = data.prize;
+        const passUid = 'surp_' + Date.now();
+
+        state.used[CFG.SURPRISE.id] = (state.used[CFG.SURPRISE.id] || 0) + 1;
+        state.wonSurprises.push(prize.id);
+        state.activePasses.unshift({
+          uid: passUid,
+          title: prize.title,
+          rule: prize.rule,
+          badge: prize.badge,
+          rarity: prize.rarity || 'epic',
+          time: nowTime,
+          isJokerPending: Boolean(prize.isJoker),
+          jokerOptions: prize.jokerOptions || null
+        });
+
+        await saveCloudState();
+        closeConfirm();
+        runRouletteAnimation(prize, data.poolPreview || [], passUid);
+      } catch (e) {
+        showToast('Сбой открытия дропа. Попробуй еще раз.');
+      } finally {
+        isBusy = false;
+        btn.textContent = 'ПОДТВЕРДИТЬ';
+      }
+    }
+
+    function runRouletteAnimation(wonPrize, poolPreview, passUid) {
+      const modal = document.getElementById('surpriseModal');
+      const track = document.getElementById('rouletteTrack');
+      const resText = document.getElementById('surpriseResultText');
+      const jokerBox = document.getElementById('surpriseJokerSelector');
+      const closeBtn = document.getElementById('btnCloseSurprise');
+
+      resText.innerHTML = 'Крутим рулетку...';
+      jokerBox.style.display = 'none';
+      jokerBox.innerHTML = '';
+      closeBtn.style.display = 'none';
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(0px)';
+
+      const fillers = poolPreview.length > 0 ? poolPreview : [
+        { title: 'БОНУСНЫЙ ДРОП', rarity: 'epic' },
+        { title: 'СЕКРЕТНЫЙ БИЛЕТ', rarity: 'arcane' },
+        { title: 'СПЕЦПРОПУСК', rarity: 'standard' }
+      ];
+
+      const totalSlots = 28;
+      const winIndex = 23;
+      let slotsHtml = '';
+
+      for (let i = 0; i < totalSlots; i++) {
+        const item = (i === winIndex)
+          ? wonPrize
+          : fillers[Math.floor(Math.random() * fillers.length)];
+        slotsHtml += `<div class="roulette-slot rarity-${item.rarity || 'epic'}">${item.title}</div>`;
+      }
+      track.innerHTML = slotsHtml;
+      modal.classList.add('open');
+
+      let ticks = 0;
+      const tickTimer = setInterval(() => {
+        ticks++;
+        triggerHaptic('tick');
+        if (ticks > 18) clearInterval(tickTimer);
+      }, 140);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const viewportWidth = document.getElementById('rouletteViewport').offsetWidth;
+          const slotWidth = 168;
+          const targetOffset = (winIndex * slotWidth) + (slotWidth / 2) - (viewportWidth / 2);
+
+          track.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.85, 0.22, 1)';
+          track.style.transform = `translateX(-${targetOffset}px)`;
+        });
+      });
+
+      setTimeout(() => {
+        clearInterval(tickTimer);
+        triggerHaptic('stamp');
+        resText.innerHTML = `<b style="color:var(--lime); font-size:0.98rem;">ВЫПАЛО: ${wonPrize.title}</b><br><span style="font-size:0.8rem;">${wonPrize.rule}</span>`;
+        closeBtn.style.display = 'block';
+        closeBtn.textContent = wonPrize.isJoker ? 'ВЫБРАТЬ БОНУС НА ЭКРАНЕ' : 'ЗАБРАТЬ ПРОПУСК';
+        renderAll();
+      }, 3350);
+    }
+
+    window.closeSurpriseModal = () => {
+      document.getElementById('surpriseModal').classList.remove('open');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.resetMyTestStorage = async () => {
+      if (!isParentMode) return;
+      state = { used: {}, activePasses: [], wonSurprises: [], archive: [] };
+      selectedJokerIndices = {};
+      await saveCloudState();
+      triggerHaptic('stamp');
+      renderAll();
+      showToast('Твой тестовый прогресс и архив обнулены!');
+    };
+
+    bootstrap();
+  </script>
+</body>
+</html>
