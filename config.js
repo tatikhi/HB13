@@ -12,20 +12,15 @@ window.PASS_CONFIG = {
   // Лимит замен (трейд-ин неиспользованных карточек на весь год)
   SWAP_LIMIT: 3,
 
-  // Категории состояний
-  CATEGORIES: [
-    { id: "tired", label: "КОГДА УСТАЛ" },
-    { id: "bored", label: "КОГДА СКУЧНО" },
-    { id: "experiment", label: "ЭКСПЕРИМЕНТЫ" }
-  ],
+  // Категории оставлены пустыми, так как в интерфейсе только «Все бонусы» и «Архив»
+  CATEGORIES: [],
 
   // Список всех сертификатов
   CARDS: [
-    // --- КОГДА УСТАЛ ---
     {
       id: "skip_school",
       code: "MP-01",
-      cat: "tired",
+      cat: "ALL",
       title: "ПРОПУСК УЧЕБНОГО ДНЯ",
       tag: "ЛЕГАЛЬНЫЙ ОТГУЛ",
       rule: "Официальный отгул от школы. Предупредить родителей вечером перед выбранным днем.",
@@ -36,31 +31,29 @@ window.PASS_CONFIG = {
     {
       id: "dinner_boss",
       code: "MP-02",
-      cat: "tired",
+      cat: "ALL",
       title: "ШЕФ-ПОВАР УЖИНА",
       tag: "МЕНЮ ДНЯ",
       rule: "Ты решаешь, что вся семья готовит или заказывает на ужин.",
       badge: "ДО 16:00",
-      rarity: "epic",
+      rarity: "standard",
       limit: 2
     },
-
-    // --- КОГДА СКУЧНО ---
     {
       id: "comp_club",
       code: "MP-03",
-      cat: "bored",
+      cat: "ALL",
       title: "КОМПЬЮТЕРНЫЙ КЛУБ",
       tag: "КАТКА НА МАКСИМАЛКАХ",
       rule: "Предупредить за 1-2 дня. Поход в компьютерный клуб.",
       badge: "ЗА 1-2 ДНЯ",
-      rarity: "arcane",
+      rarity: "epic",
       limit: 2
     },
     {
       id: "game_donate",
       code: "MP-04",
-      cat: "bored",
+      cat: "ALL",
       title: "ДОНАТ В ИГРУ",
       tag: "БАЛАНС / ПАСС",
       rule: "Пополнение игрового баланса или покупка пасса.",
@@ -71,7 +64,7 @@ window.PASS_CONFIG = {
     {
       id: "night_event",
       code: "MP-05",
-      cat: "bored",
+      cat: "ALL",
       title: "НОЧНОЙ РЕЖИМ",
       tag: "ОТБОЙ ПОСЛЕ 00:00",
       rule: "Участие в поздних ивентах или катка с друзьями.",
@@ -82,7 +75,7 @@ window.PASS_CONFIG = {
     {
       id: "late_walk",
       code: "MP-06",
-      cat: "bored",
+      cat: "ALL",
       title: "ПОЗДНЯЯ ПРОГУЛКА",
       tag: "ДО 22:30 (ВЕСНА-ЛЕТО)",
       rule: "Продление вечерней прогулки с друзьями (до 22:30, только летне-весенний период), на связи с родителями.",
@@ -93,7 +86,7 @@ window.PASS_CONFIG = {
     {
       id: "movie_night",
       code: "MP-07",
-      cat: "bored",
+      cat: "ALL",
       title: "КОНТРОЛЬ НАД ПУЛЬТОМ",
       tag: "КИНОНОЧЬ",
       rule: "Выбор любого фильма или сериала на вечер + чипсы/попкорн.",
@@ -101,12 +94,10 @@ window.PASS_CONFIG = {
       rarity: "standard",
       limit: 3
     },
-
-    // --- ЭКСПЕРИМЕНТЫ ---
     {
       id: "ice_cream_legend",
       code: "MP-08",
-      cat: "experiment",
+      cat: "ALL",
       title: "МОРОЖЕНОЕ ПОСЛЕ УЖИНА",
       tag: "ЛЕГЕНДАРНЫЙ ДЕЛИКАТЕС",
       rule: "Строго 1 раз за год. Предъявлять исключительно после ужина!!!",
@@ -117,12 +108,12 @@ window.PASS_CONFIG = {
     {
       id: "yes_hour",
       code: "MP-09",
-      cat: "experiment",
+      cat: "ALL",
       title: "«ДА-ЧАС» ОТ РОДИТЕЛЕЙ",
       tag: "60 МИНУТ БЕЗ ОТКАЗОВ",
       rule: "Целый час соглашаемся на любую адекватную авантюру или просьбу.",
       badge: "МГНОВЕННО",
-      rarity: "epic",
+      rarity: "standard",
       limit: 1
     }
   ]
