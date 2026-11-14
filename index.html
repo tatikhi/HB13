@@ -173,23 +173,21 @@
     .crate-title { font-size: 1.35rem; color: var(--text-main); margin-bottom: 4px; }
     .crate-sub { font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
 
-    /* ВКЛАДКИ КАТЕГОРИЙ И АРХИВА */
+    /* ВКЛАДКИ: ВСЕ БОНУСЫ И АРХИВ (ОДИНАКОВЫЙ РАЗМЕР) */
     .cat-tabs {
       display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 4px;
+      gap: 8px;
       margin-bottom: 14px;
-      scrollbar-width: none;
     }
-    .cat-tabs::-webkit-scrollbar { display: none; }
     .cat-tab {
+      flex: 1;
+      text-align: center;
       background: var(--bg-card);
       border: 1px solid var(--border-hard);
       color: var(--text-muted);
-      padding: 8px 12px;
+      padding: 10px 12px;
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
       white-space: nowrap;
       cursor: pointer;
@@ -627,7 +625,7 @@
       <div class="crate-sub" id="crateSub">1 бесплатный спин каждый месяц (неиспользованный сгорает).</div>
     </div>
 
-    <!-- ВКЛАДКИ КАТЕГОРИЙ И АРХИВА -->
+    <!-- ВКЛАДКИ: ВСЕ БОНУСЫ И АРХИВ -->
     <div class="cat-tabs mono" id="catTabs"></div>
 
     <!-- КОНТЕНТ ВКЛАДКИ -->
@@ -862,8 +860,7 @@
       const wrap = document.getElementById('catTabs');
       const archiveLabel = state.archive.length > 0 ? `АРХИВ (${state.archive.length})` : 'АРХИВ';
       const allTabs = [
-        { id: 'ALL', label: 'ВСЕ БИЛЕТЫ' },
-        ...CFG.CATEGORIES,
+        { id: 'ALL', label: 'ВСЕ БОНУСЫ' },
         { id: 'ARCHIVE', label: archiveLabel }
       ];
       wrap.innerHTML = allTabs.map(t => `
@@ -1095,15 +1092,17 @@
         return;
       }
 
-      const baseList = selectedCat === 'ALL'
-        ? CFG.CARDS
-        : CFG.CARDS.filter(c => c.cat === selectedCat);
+      const rarityRank = { standard: 1, epic: 2, arcane: 3 };
 
-      // Потраченные сертификаты (0 бонусов) уходят в самый низ списка
-      const filtered = [...baseList].sort((a, b) => {
+      // Потраченные (0 бонусов) уходят в самый низ, остальные ранжируются: standard -> epic -> arcane
+      const filtered = [...CFG.CARDS].sort((a, b) => {
         const aExhausted = getCardLeft(a) === 0 ? 1 : 0;
         const bExhausted = getCardLeft(b) === 0 ? 1 : 0;
-        return aExhausted - bExhausted;
+        if (aExhausted !== bExhausted) return aExhausted - bExhausted;
+
+        const rA = rarityRank[a.rarity] || 99;
+        const rB = rarityRank[b.rarity] || 99;
+        return rA - rB;
       });
 
       const swapsLeft = Math.max(0, (CFG.SWAP_LIMIT || 3) - state.swapsUsed);
