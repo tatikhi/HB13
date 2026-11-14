@@ -80,8 +80,8 @@
       border-radius: 3px;
     }
     .brand-title { font-size: 1.35rem; font-weight: 700; line-height: 1; }
-    .hud-stats { text-align: right; font-size: 0.75rem; color: var(--text-muted); }
-    .hud-stats b { color: var(--lime); font-size: 0.85rem; }
+    .hud-stats { text-align: right; font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; }
+    .hud-stats b { color: var(--lime); font-size: 0.82rem; }
 
     /* ПАНЕЛЬ ТЕСТИРОВАНИЯ ДЛЯ РОДИТЕЛЕЙ */
     .parent-bar {
@@ -143,7 +143,7 @@
     .surprise-crate:active { transform: scale(0.985); }
     .surprise-crate.depleted {
       border-color: var(--border-hard);
-      opacity: 0.55;
+      opacity: 0.58;
       cursor: default;
     }
     .crate-top {
@@ -151,6 +151,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
+      gap: 8px;
     }
     .crate-tag {
       font-size: 0.7rem;
@@ -159,6 +160,11 @@
       padding: 2px 6px;
       font-weight: 700;
       border-radius: 2px;
+    }
+    .crate-tag.empty {
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+      border: 1px solid var(--border-hard);
     }
     .crate-title { font-size: 1.35rem; color: var(--text-main); margin-bottom: 4px; }
     .crate-sub { font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; }
@@ -201,7 +207,7 @@
       overflow: hidden;
       transition: opacity 0.2s;
     }
-    .ticket.exhausted { opacity: 0.45; }
+    .ticket.exhausted { opacity: 0.48; }
     .ticket.archived-card { opacity: 0.78; }
 
     .ticket::before {
@@ -335,19 +341,33 @@
       justify-content: space-between;
       align-items: center;
       background: rgba(0, 0, 0, 0.18);
-      gap: 8px;
+      gap: 6px;
     }
-    .stub-count { font-size: 0.75rem; color: var(--text-muted); }
+    .stub-count { font-size: 0.73rem; color: var(--text-muted); }
     .stub-count b { color: var(--text-main); }
+    .stub-actions { display: flex; gap: 6px; align-items: center; }
+
+    .btn-swap {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-hard);
+      padding: 8px 9px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.7rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-swap:active { border-color: var(--lime); color: var(--lime); }
 
     .btn-use {
       background: var(--lime);
       color: #0D0F12;
       border: none;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 4px;
       font-weight: 700;
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       cursor: pointer;
       white-space: nowrap;
       transition: transform 0.1s;
@@ -424,13 +444,15 @@
     .modal-box {
       width: 100%;
       max-width: 390px;
+      max-height: 86vh;
+      overflow-y: auto;
       background: var(--bg-card);
       border: 1px solid var(--lime);
       border-radius: 6px;
       padding: 20px;
     }
-    .modal-box h3 { font-size: 1.4rem; margin-bottom: 8px; }
-    .modal-box p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 18px; }
+    .modal-box h3 { font-size: 1.35rem; margin-bottom: 8px; }
+    .modal-box p { font-size: 0.84rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 16px; }
     .modal-actions { display: flex; gap: 10px; }
     .btn-modal-cancel {
       flex: 1;
@@ -451,6 +473,41 @@
       border-radius: 4px;
       font-weight: 700;
       cursor: pointer;
+    }
+    .btn-modal-confirm:disabled {
+      background: var(--bg-elevated);
+      color: #5C677D;
+      cursor: default;
+    }
+
+    /* СПИСОК ДЛЯ ТРЕЙД-ИНА */
+    .swap-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 16px;
+      max-height: 46vh;
+      overflow-y: auto;
+    }
+    .swap-target-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hard);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+    }
+    .swap-target-btn.selected {
+      border-color: var(--lime);
+      background: rgba(204, 255, 0, 0.12);
+      color: var(--lime);
     }
 
     /* РУЛЕТКА СЮРПРИЗА */
@@ -533,7 +590,8 @@
         <div class="brand-title hud-font">MATCH PASS</div>
       </div>
       <div class="hud-stats mono">
-        ДОСТУПНО: <b id="totalLeftCount">0</b>
+        ЗАРЯДОВ: <b id="totalLeftCount">0</b><br>
+        ЗАМЕНЫ: <b id="swapsLeftCount">3/3</b>
       </div>
     </div>
 
@@ -549,24 +607,24 @@
       <div id="activeList"></div>
     </div>
 
-    <!-- БАННЕР СЮРПРИЗ -->
+    <!-- ЕЖЕМЕСЯЧНЫЙ БАННЕР СЮРПРИЗ -->
     <div class="surprise-crate" id="surpriseCrate" onclick="openSurprisePrompt()">
       <div class="crate-top">
-        <span class="crate-tag mono" id="crateCountBadge">2 / 2 ПОПЫТКИ</span>
-        <span class="mono" style="font-size:0.7rem; color:var(--lime);">[ SECRET DROP ]</span>
+        <span class="crate-tag mono" id="crateCountBadge">1 / 1 В ЭТОМ МЕСЯЦЕ</span>
+        <span class="mono" style="font-size:0.7rem; color:var(--lime);">[ MONTHLY DROP ]</span>
       </div>
       <div class="crate-title hud-font" id="crateTitle">ЗАКРЫТЫЙ ДРОП // СЮРПРИЗ</div>
-      <div class="crate-sub" id="crateSub">Рандомный сертификат из закрытого пула.</div>
+      <div class="crate-sub" id="crateSub">1 бесплатный спин каждый месяц.</div>
     </div>
 
-    <!-- ВКЛАДКИ КАТЕГОРИЙ И АРХИВ -->
+    <!-- ВКЛАДКИ КАТЕГОРИЙ И АРХИВА -->
     <div class="cat-tabs mono" id="catTabs"></div>
 
     <!-- КОНТЕНТ ВКЛАДКИ -->
     <div id="cardsContainer"></div>
   </div>
 
-  <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
+  <!-- МОДАЛКА ПОДТВЕРЖДЕНИЯ АКТИВАЦИИ -->
   <div class="modal-backdrop" id="confirmModal">
     <div class="modal-box">
       <h3 class="hud-font" id="confirmTitle">АКТИВИРОВАТЬ БИЛЕТ?</h3>
@@ -574,6 +632,19 @@
       <div class="modal-actions mono">
         <button class="btn-modal-cancel" onclick="closeConfirm()">ОТМЕНА</button>
         <button class="btn-modal-confirm" id="btnConfirmAction">ПОДТВЕРДИТЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ЗАМЕНЫ (ТРЕЙД-ИН) -->
+  <div class="modal-backdrop" id="swapModal">
+    <div class="modal-box">
+      <h3 class="hud-font">ЗАМЕНА БОНУСА</h3>
+      <p id="swapDesc">Переносим 1 заряд на любую другую карточку.</p>
+      <div class="swap-list" id="swapTargetList"></div>
+      <div class="modal-actions mono">
+        <button class="btn-modal-cancel" onclick="closeSwapModal()">ОТМЕНА</button>
+        <button class="btn-modal-confirm" id="btnConfirmSwap" disabled onclick="executeCardSwap()">ЗАМЕНИТЬ</button>
       </div>
     </div>
   </div>
@@ -589,7 +660,6 @@
       <div id="surpriseResultText" style="min-height:44px; font-size:0.85rem; color:var(--text-muted); text-align:left;">
         Определяем твой бонус...
       </div>
-      <div id="surpriseJokerSelector" style="display:none; text-align:left;"></div>
       <button class="btn-modal-confirm mono" id="btnCloseSurprise" style="width:100%; margin-top:12px; display:none;" onclick="closeSurpriseModal()">ЗАБРАТЬ ПРОПУСК</button>
     </div>
   </div>
@@ -599,20 +669,54 @@
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     const CFG = window.PASS_CONFIG;
-    const STORAGE_KEY = 'matchpass_v2_state';
+    const STORAGE_KEY = 'matchpass_v3_state';
 
     let state = {
-      used: {},          // { cardId: count }
-      activePasses: [],  // [{ uid, title, rule, badge, rarity, time, isJokerPending, jokerOptions }]
-      wonSurprises: [],  // ['surp_pizza', ...]
-      archive: []        // [{ uid, title, rule, badge, rarity, activatedAt, archivedAt }]
+      used: {},               // { cardId: usedCount }
+      bonusLimits: {},        // { cardId: deltaFromSwaps } (+1 или -1)
+      swapsUsed: 0,           // сколько раз за год использован трейд-ин (макс 3)
+      lastSurpriseMonth: '',  // '2026-11'
+      lastSurpriseId: '',     // id последнего выпавшего приза (чтобы не дублировать подряд)
+      activePasses: [],       // [{ uid, title, rule, badge, rarity, time, isJokerPending, jokerOptions }]
+      archive: []             // [{ uid, title, rule, badge, rarity, activatedAt, archivedAt }]
     };
 
     let selectedCat = 'ALL';
     let isParentMode = false;
     let pendingCardId = null;
+    let swapSourceId = null;
+    let swapTargetId = null;
     let isBusy = false;
-    let selectedJokerIndices = {}; // { passUid: idx }
+    let selectedJokerIndices = {};
+
+    function getCurrentMonthKey() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}`;
+    }
+
+    function getNextMonthLabel() {
+      const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+      const d = new Date();
+      const nextIdx = (d.getMonth() + 1) % 12;
+      return `1 ${months[nextIdx]}`;
+    }
+
+    function getCardEffectiveLimit(card) {
+      const delta = state.bonusLimits[card.id] || 0;
+      return Math.max(0, card.limit + delta);
+    }
+
+    function getCardLeft(card) {
+      const effLimit = getCardEffectiveLimit(card);
+      const used = state.used[card.id] || 0;
+      return Math.max(0, effLimit - used);
+    }
+
+    function isSurpriseAvailableThisMonth() {
+      return state.lastSurpriseMonth !== getCurrentMonthKey();
+    }
 
     function getClientTimestamp() {
       return new Date().toLocaleString('ru-RU', {
@@ -703,8 +807,11 @@
       const saved = await loadCloudState();
       if (saved) {
         state.used = saved.used || {};
+        state.bonusLimits = saved.bonusLimits || {};
+        state.swapsUsed = Number(saved.swapsUsed) || 0;
+        state.lastSurpriseMonth = saved.lastSurpriseMonth || '';
+        state.lastSurpriseId = saved.lastSurpriseId || '';
         state.activePasses = Array.isArray(saved.activePasses) ? saved.activePasses : [];
-        state.wonSurprises = Array.isArray(saved.wonSurprises) ? saved.wonSurprises : [];
         state.archive = Array.isArray(saved.archive) ? saved.archive : [];
       }
 
@@ -713,7 +820,6 @@
         document.getElementById('parentBar').style.display = 'flex';
       }
 
-      renderTabs();
       renderAll();
     }
 
@@ -750,24 +856,34 @@
     function renderHeaderStats() {
       let totalLeft = 0;
       CFG.CARDS.forEach(c => {
-        const used = state.used[c.id] || 0;
-        totalLeft += Math.max(0, c.limit - used);
+        totalLeft += getCardLeft(c);
       });
-      const surpUsed = state.used[CFG.SURPRISE.id] || 0;
-      totalLeft += Math.max(0, CFG.SURPRISE.limit - surpUsed);
+      if (isSurpriseAvailableThisMonth()) totalLeft += 1;
+
+      const swapLimit = CFG.SWAP_LIMIT || 3;
+      const swapsLeft = Math.max(0, swapLimit - state.swapsUsed);
+
       document.getElementById('totalLeftCount').textContent = totalLeft;
+      document.getElementById('swapsLeftCount').textContent = `${swapsLeft}/${swapLimit}`;
     }
 
     function renderSurpriseCrate() {
-      const used = state.used[CFG.SURPRISE.id] || 0;
-      const left = Math.max(0, CFG.SURPRISE.limit - used);
+      const available = isSurpriseAvailableThisMonth();
       const crate = document.getElementById('surpriseCrate');
+      const badge = document.getElementById('crateCountBadge');
+
       document.getElementById('crateTitle').textContent = CFG.SURPRISE.title;
       document.getElementById('crateSub').textContent = CFG.SURPRISE.subtitle;
-      document.getElementById('crateCountBadge').textContent = `${left} / ${CFG.SURPRISE.limit} ПОПЫТКИ`;
 
-      if (left === 0) crate.classList.add('depleted');
-      else crate.classList.remove('depleted');
+      if (available) {
+        badge.textContent = '1 / 1 В ЭТОМ МЕСЯЦЕ';
+        badge.classList.remove('empty');
+        crate.classList.remove('depleted');
+      } else {
+        badge.textContent = `ОБНОВИТСЯ ${getNextMonthLabel().toUpperCase()}`;
+        badge.classList.add('empty');
+        crate.classList.add('depleted');
+      }
     }
 
     function renderActivePasses() {
@@ -880,7 +996,6 @@
       }
     };
 
-    // Перенос выполненного пропуска в вкладку «АРХИВ»
     window.movePassToArchive = async (uid) => {
       const idx = state.activePasses.findIndex(p => p.uid === uid);
       if (idx === -1) return;
@@ -905,7 +1020,6 @@
     function renderCards() {
       const container = document.getElementById('cardsContainer');
 
-      // Вкладка АРХИВ
       if (selectedCat === 'ARCHIVE') {
         if (state.archive.length === 0) {
           container.innerHTML = `
@@ -945,20 +1059,26 @@
         return;
       }
 
-      // Обычные категории сертификатов
       const filtered = selectedCat === 'ALL'
         ? CFG.CARDS
         : CFG.CARDS.filter(c => c.cat === selectedCat);
 
+      const swapsLeft = Math.max(0, (CFG.SWAP_LIMIT || 3) - state.swapsUsed);
+
       container.innerHTML = filtered.map(card => {
-        const used = state.used[card.id] || 0;
-        const left = Math.max(0, card.limit - used);
+        const effLimit = getCardEffectiveLimit(card);
+        const left = getCardLeft(card);
         const exhausted = left === 0;
 
         let cellsHtml = '';
-        for (let i = 0; i < card.limit; i++) {
+        const barTotal = Math.max(effLimit, 1);
+        for (let i = 0; i < barTotal; i++) {
           cellsHtml += `<div class="charge-cell ${i < left ? 'filled' : ''}"></div>`;
         }
+
+        const swapBtnHtml = (!exhausted && swapsLeft > 0)
+          ? `<button class="btn-swap mono" onclick="openSwapModal('${card.id}')">ЗАМЕНИТЬ</button>`
+          : '';
 
         return `
           <div class="ticket rarity-${card.rarity} ${exhausted ? 'exhausted' : ''}">
@@ -979,22 +1099,115 @@
               <div class="notch-right"></div>
             </div>
             <div class="ticket-stub">
-              <div class="stub-count mono">ОСТАТОК: <b>${left}/${card.limit}</b></div>
-              <button class="btn-use mono" ${exhausted ? 'disabled' : ''} onclick="openConfirm('${card.id}')">
-                ${exhausted ? 'НЕТ ЗАРЯДОВ' : 'АКТИВИРОВАТЬ'}
-              </button>
+              <div class="stub-count mono">ОСТАТОК: <b>${left}/${effLimit}</b></div>
+              <div class="stub-actions">
+                ${swapBtnHtml}
+                <button class="btn-use mono" ${exhausted ? 'disabled' : ''} onclick="openConfirm('${card.id}')">
+                  ${exhausted ? 'НЕТ ЗАРЯДОВ' : 'АКТИВИРОВАТЬ'}
+                </button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // ПОДТВЕРЖДЕНИЕ ОБЫЧНОГО СЕРТИФИКАТА
+    // МОДАЛКА ТРЕЙД-ИНА (ЗАМЕНА КАРТОЧКИ)
+    window.openSwapModal = (sourceId) => {
+      const swapsLeft = Math.max(0, (CFG.SWAP_LIMIT || 3) - state.swapsUsed);
+      if (swapsLeft <= 0) {
+        showToast('Все 3 замены на этот год уже использованы.');
+        return;
+      }
+      const sourceCard = CFG.CARDS.find(c => c.id === sourceId);
+      if (!sourceCard || getCardLeft(sourceCard) <= 0) return;
+
+      triggerHaptic('tick');
+      swapSourceId = sourceId;
+      swapTargetId = null;
+
+      document.getElementById('swapDesc').innerHTML =
+        `Списываем 1 заряд с <b>«${sourceCard.title}»</b> и переносим на выбранный бонус (осталось замен: <b>${swapsLeft}/3</b>):`;
+
+      const listEl = document.getElementById('swapTargetList');
+      const targets = CFG.CARDS.filter(c => c.id !== sourceId);
+      listEl.innerHTML = targets.map(t => `
+        <button class="swap-target-btn" id="swap_opt_${t.id}" onclick="selectSwapTarget('${t.id}')">
+          <span>${t.title}</span>
+          <span class="mono" style="font-size:0.72rem; color:var(--text-muted);">сейчас: ${getCardLeft(t)}</span>
+        </button>
+      `).join('');
+
+      document.getElementById('btnConfirmSwap').disabled = true;
+      document.getElementById('swapModal').classList.add('open');
+    };
+
+    window.selectSwapTarget = (targetId) => {
+      triggerHaptic('tick');
+      swapTargetId = targetId;
+      document.querySelectorAll('.swap-target-btn').forEach(btn => btn.classList.remove('selected'));
+      const activeBtn = document.getElementById(`swap_opt_${targetId}`);
+      if (activeBtn) activeBtn.classList.add('selected');
+      document.getElementById('btnConfirmSwap').disabled = false;
+    };
+
+    window.closeSwapModal = () => {
+      swapSourceId = null;
+      swapTargetId = null;
+      document.getElementById('swapModal').classList.remove('open');
+    };
+
+    window.executeCardSwap = async () => {
+      if (isBusy || !swapSourceId || !swapTargetId) return;
+      const fromCard = CFG.CARDS.find(c => c.id === swapSourceId);
+      const toCard = CFG.CARDS.find(c => c.id === swapTargetId);
+      if (!fromCard || !toCard || getCardLeft(fromCard) <= 0) return;
+
+      const swapLimit = CFG.SWAP_LIMIT || 3;
+      if (state.swapsUsed >= swapLimit) return;
+
+      isBusy = true;
+      const btn = document.getElementById('btnConfirmSwap');
+      btn.textContent = 'ОБМЕН...';
+
+      const newSwapsLeft = swapLimit - (state.swapsUsed + 1);
+
+      try {
+        const res = await fetch(`${CFG.WORKER_URL}/swap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initData: tg.initData,
+            fromTitle: fromCard.title,
+            toTitle: toCard.title,
+            swapsLeft: newSwapsLeft,
+            clientTime: getClientTimestamp()
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error('Swap rejected');
+
+        state.bonusLimits[fromCard.id] = (state.bonusLimits[fromCard.id] || 0) - 1;
+        state.bonusLimits[toCard.id] = (state.bonusLimits[toCard.id] || 0) + 1;
+        state.swapsUsed += 1;
+
+        await saveCloudState();
+        closeSwapModal();
+        triggerHaptic('stamp');
+        renderAll();
+        showToast(`Заменено: +1 «${toCard.title}»`);
+      } catch (e) {
+        showToast('Ошибка связи. Проверь интернет!');
+      } finally {
+        isBusy = false;
+        btn.textContent = 'ЗАМЕНИТЬ';
+      }
+    };
+
+    // ПОДТВЕРЖДЕНИЕ АКТИВАЦИИ ОБЫЧНОГО СЕРТИФИКАТА
     window.openConfirm = (cardId) => {
       const card = CFG.CARDS.find(c => c.id === cardId);
-      if (!card) return;
-      const used = state.used[card.id] || 0;
-      if (used >= card.limit) return;
+      if (!card || getCardLeft(card) <= 0) return;
 
       triggerHaptic('tick');
       pendingCardId = cardId;
@@ -1015,7 +1228,7 @@
     async function executeCardActivation() {
       if (isBusy || !pendingCardId) return;
       const card = CFG.CARDS.find(c => c.id === pendingCardId);
-      if (!card) return;
+      if (!card || getCardLeft(card) <= 0) return;
 
       isBusy = true;
       const btn = document.getElementById('btnConfirmAction');
@@ -1063,18 +1276,17 @@
       }
     }
 
-    // ОТКРЫТИЕ СЮРПРИЗА
+    // ЕЖЕМЕСЯЧНОЕ ОТКРЫТИЕ СЮРПРИЗА
     window.openSurprisePrompt = () => {
-      const used = state.used[CFG.SURPRISE.id] || 0;
-      if (used >= CFG.SURPRISE.limit) {
-        showToast('Все закрытые дропы уже открыты!');
+      if (!isSurpriseAvailableThisMonth()) {
+        showToast(`Спин за этот месяц уже открыт. Новый — ${getNextMonthLabel()}.`);
         return;
       }
 
       triggerHaptic('tick');
       document.getElementById('confirmTitle').textContent = 'ОТКРЫТЬ СЮРПРИЗ?';
       document.getElementById('confirmDesc').textContent =
-        'Выпадет случайный сертификат. Попытка спишется мгновенно, отменить выбор нельзя.';
+        'Выпадет случайный сертификат. Попытка за этот месяц спишется сразу, отменить выбор нельзя.';
 
       const btn = document.getElementById('btnConfirmAction');
       btn.onclick = executeSurpriseDrop;
@@ -1082,7 +1294,7 @@
     };
 
     async function executeSurpriseDrop() {
-      if (isBusy) return;
+      if (isBusy || !isSurpriseAvailableThisMonth()) return;
       isBusy = true;
       const btn = document.getElementById('btnConfirmAction');
       btn.textContent = 'ВЗЛОМ...';
@@ -1094,7 +1306,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             initData: tg.initData,
-            excludeIds: state.wonSurprises,
+            excludeIds: state.lastSurpriseId ? [state.lastSurpriseId] : [],
             clientTime: nowTime
           })
         });
@@ -1104,8 +1316,8 @@
         const prize = data.prize;
         const passUid = 'surp_' + Date.now();
 
-        state.used[CFG.SURPRISE.id] = (state.used[CFG.SURPRISE.id] || 0) + 1;
-        state.wonSurprises.push(prize.id);
+        state.lastSurpriseMonth = getCurrentMonthKey();
+        state.lastSurpriseId = prize.id;
         state.activePasses.unshift({
           uid: passUid,
           title: prize.title,
@@ -1119,7 +1331,7 @@
 
         await saveCloudState();
         closeConfirm();
-        runRouletteAnimation(prize, data.poolPreview || [], passUid);
+        runRouletteAnimation(prize, data.poolPreview || []);
       } catch (e) {
         showToast('Сбой открытия дропа. Попробуй еще раз.');
       } finally {
@@ -1128,16 +1340,13 @@
       }
     }
 
-    function runRouletteAnimation(wonPrize, poolPreview, passUid) {
+    function runRouletteAnimation(wonPrize, poolPreview) {
       const modal = document.getElementById('surpriseModal');
       const track = document.getElementById('rouletteTrack');
       const resText = document.getElementById('surpriseResultText');
-      const jokerBox = document.getElementById('surpriseJokerSelector');
       const closeBtn = document.getElementById('btnCloseSurprise');
 
       resText.innerHTML = 'Крутим рулетку...';
-      jokerBox.style.display = 'none';
-      jokerBox.innerHTML = '';
       closeBtn.style.display = 'none';
       track.style.transition = 'none';
       track.style.transform = 'translateX(0px)';
@@ -1196,12 +1405,20 @@
 
     window.resetMyTestStorage = async () => {
       if (!isParentMode) return;
-      state = { used: {}, activePasses: [], wonSurprises: [], archive: [] };
+      state = {
+        used: {},
+        bonusLimits: {},
+        swapsUsed: 0,
+        lastSurpriseMonth: '',
+        lastSurpriseId: '',
+        activePasses: [],
+        archive: []
+      };
       selectedJokerIndices = {};
       await saveCloudState();
       triggerHaptic('stamp');
       renderAll();
-      showToast('Твой тестовый прогресс и архив обнулены!');
+      showToast('Твой тестовый прогресс, замены и архив обнулены!');
     };
 
     bootstrap();
