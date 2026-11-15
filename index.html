@@ -46,7 +46,7 @@
     .hud-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.03em; }
     .mono { font-family: 'JetBrains Mono', monospace; }
 
-    /* ЭКРАН БЛОКИРОВКИ ВНЕ TELEGRAM */
+    /* ЭКРАН БЛОКИРОВКИ / ОШИБКИ ПОДКЛЮЧЕНИЯ */
     #lockScreen {
       display: none;
       flex-direction: column;
@@ -60,7 +60,24 @@
       border-radius: 6px;
     }
     #lockScreen h1 { font-size: 2rem; color: var(--lime); margin-bottom: 10px; }
-    #lockScreen p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; max-width: 300px; }
+    #lockScreen p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; max-width: 310px; }
+    .lock-code {
+      margin-top: 14px;
+      font-size: 0.72rem;
+      color: #5C677D;
+    }
+    .btn-retry-boot {
+      display: none;
+      margin-top: 18px;
+      background: var(--lime);
+      color: #0D0F12;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
 
     /* ВЕРХНЯЯ ПАНЕЛЬ HUD */
     .top-hud {
@@ -578,10 +595,12 @@
 </head>
 <body>
 
-  <!-- ЭКРАН БЛОКИРОВКИ ВНЕ TELEGRAM -->
+  <!-- ЭКРАН БЛОКИРОВКИ ВНЕ TELEGRAM / ОШИБКИ СЕТИ -->
   <div id="lockScreen">
-    <h1 class="hud-font">ACCESS DENIED</h1>
-    <p class="mono">Этот цифровой пропуск работает только внутри официального бота Telegram.</p>
+    <h1 class="hud-font" id="lockTitle">ACCESS DENIED</h1>
+    <p class="mono" id="lockMsg">Этот цифровой пропуск работает только внутри официального бота Telegram.</p>
+    <div class="lock-code mono" id="lockCode"></div>
+    <button class="btn-retry-boot mono" id="btnRetryBoot" onclick="location.reload()">ПОВТОРИТЬ</button>
   </div>
 
   <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
@@ -698,6 +717,14 @@
     let isBusy = false;
     let selectedJokerIndices = {};
 
+    function showLockScreen(code, customTitle, customMsg, showRetry = false) {
+      if (customTitle) document.getElementById('lockTitle').textContent = customTitle;
+      if (customMsg) document.getElementById('lockMsg').textContent = customMsg;
+      document.getElementById('lockCode').textContent = `CODE: ${code}`;
+      document.getElementById('btnRetryBoot').style.display = showRetry ? 'inline-block' : 'none';
+      document.getElementById('lockScreen').style.display = 'flex';
+    }
+
     function getCurrentMonthKey() {
       const d = new Date();
       const y = d.getFullYear();
@@ -810,8 +837,13 @@
     }
 
     async function bootstrap() {
+      if (!CFG || !CFG.WORKER_URL) {
+        showLockScreen('NO_CONFIG', 'ОШИБКА КОНФИГА', 'Файл настроек config.js не загрузился. Обнови страницу через пару секунд.', true);
+        return;
+      }
+
       if (!tg || !tg.initData || tg.initData.length < 10) {
-        document.getElementById('lockScreen').style.display = 'flex';
+        showLockScreen('NO_TG_DATA', 'ACCESS DENIED', 'Открой пропуск через кнопку меню внутри официального бота Telegram.', false);
         return;
       }
 
@@ -826,14 +858,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData: tg.initData })
         });
+        if (!res.ok) {
+          showLockScreen(`AUTH_${res.status}`, 'ACCESS DENIED', 'Сервер отклонил подпись Telegram. Проверь BOT_TOKEN или перезапусти бота.', true);
+          return;
+        }
         const authData = await res.json();
         if (!authData.ok) {
-          document.getElementById('lockScreen').style.display = 'flex';
+          showLockScreen('AUTH_REJECT', 'ACCESS DENIED', 'Этот цифровой пропуск работает только внутри официального бота Telegram.', false);
           return;
         }
         isParentMode = Boolean(authData.isParent);
       } catch (e) {
-        document.getElementById('lockScreen').style.display = 'flex';
+        showLockScreen('NET_ERR', 'НЕТ СВЯЗИ С СЕРВЕРОМ', 'Не удалось подключиться к серверу проверки. Проверь интернет или включи VPN и нажми «Повторить».', true);
         return;
       }
 
@@ -1431,7 +1467,6 @@
       track.innerHTML = slotsHtml;
       modal.classList.add('open');
 
-      // Плавное замедление виброоткликов синхронно с торможением ленты (6.5 сек)
       const tickSchedule = [
         100, 200, 300, 410, 520, 640, 770, 910, 1060, 1220,
         1400, 1600, 1820, 2060, 2330, 2630, 2970, 3360, 3810,
