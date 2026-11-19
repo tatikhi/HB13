@@ -1,5 +1,5 @@
 window.PASS_CONFIG = {
-  WORKER_URL: "https://tg-pass-relay.tania-kustova.workers.dev",
+  WORKER_URL: "https://happy-pass-api.vercel.app",
 
   // Настройки ежемесячной плашки «СЮРПРИЗ»
   SURPRISE: {
